@@ -26,11 +26,11 @@ onMounted(load);
 <template>
   <div class="mb-4 flex flex-wrap gap-2"><input v-model="q" placeholder="Search by name or email" class="field max-w-xs" />
     <select v-model="f" class="field w-40"><option>All</option><option>Active</option><option>Suspended</option><option>Disabled</option></select></div>
-  <div class="overflow-x-auto rounded-2xl border border-line bg-surface"><table class="w-full text-left text-sm">
+  <div class="overflow-x-auto rounded-2xl border border-line bg-surface"><table class="rtable w-full text-left text-sm">
     <thead class="text-muted"><tr><th class="p-3">Member</th><th>Status</th><th>Storage</th><th>Created</th><th>Last activity</th></tr></thead>
     <tbody><tr v-for="m in shown" :key="m.id" class="cursor-pointer border-t border-line hover:bg-surface2" @click="sel = m.id">
-      <td class="p-3"><b class="font-medium">{{ m.display_name }}</b><div class="text-muted">{{ m.email }}</div></td><td><span :class="['pill', statusStyle[label(m.status)]]">{{ label(m.status) }}</span></td>
-      <td>{{ (m.used_bytes / GB).toFixed(1) }} / {{ Math.round(m.quota_bytes / GB) }} GB</td><td>{{ day(m.created_at) }}</td><td>{{ day(m.last_active_at) }}</td></tr>
+      <td data-primary class="p-3"><b class="font-medium">{{ m.display_name }}</b><div class="text-muted">{{ m.email }}</div></td><td data-label="Status"><span :class="['pill', statusStyle[label(m.status)]]">{{ label(m.status) }}</span></td>
+      <td data-label="Storage">{{ (m.used_bytes / GB).toFixed(1) }} / {{ Math.round(m.quota_bytes / GB) }} GB</td><td data-label="Created">{{ day(m.created_at) }}</td><td data-label="Last activity">{{ day(m.last_active_at) }}</td></tr>
       <tr v-if="!shown.length"><td colspan="5" class="p-8 text-center text-muted">No members match your search.</td></tr></tbody></table></div>
   <p v-if="toast" class="mt-3 text-sm text-emerald-600" role="status">{{ toast }}</p>
   <p v-if="err && !cur" class="mt-3 text-sm text-red-600" role="alert">{{ err }}</p>

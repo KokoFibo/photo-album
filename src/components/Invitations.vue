@@ -24,17 +24,17 @@ const revoke = (i: Row) => act(() => api(`/api/admin/invitations/${i.id}/revoke`
 onMounted(async () => { load(); try { const s = await api<{ default_quota_gb: number; invite_expiry_days: number }>("/api/admin/settings"); quota.value = s.default_quota_gb; days.value = s.invite_expiry_days; } catch { /* keep built-in defaults */ } });
 </script>
 <template>
-  <form class="card mb-6 grid gap-3 sm:grid-cols-[1fr_110px_120px_auto]" @submit.prevent="create">
-    <input v-model="email" type="email" required placeholder="Email address" class="field" />
-    <input v-model.number="quota" type="number" min="1" max="1000" class="field" title="Initial quota (GB)" />
-    <select v-model.number="days" class="field"><option :value="1">1 day</option><option :value="3">3 days</option><option :value="7">7 days</option><option :value="14">14 days</option><option :value="30">30 days</option></select>
+  <form class="card mb-6 grid gap-3 sm:grid-cols-[1fr_110px_120px_auto] sm:items-end" @submit.prevent="create">
+    <label class="block text-sm font-medium">Email address<input v-model="email" type="email" required placeholder="name@example.com" class="field mt-1.5" /></label>
+    <label class="block text-sm font-medium">Quota (GB)<input v-model.number="quota" type="number" min="1" max="1000" class="field mt-1.5" /></label>
+    <label class="block text-sm font-medium">Expires in<select v-model.number="days" class="field mt-1.5"><option :value="1">1 day</option><option :value="3">3 days</option><option :value="7">7 days</option><option :value="14">14 days</option><option :value="30">30 days</option></select></label>
     <button class="btn btn-p" :disabled="busy">Send invitation</button></form>
   <p v-if="err" class="mb-3 text-sm text-red-600" role="alert">{{ err }}</p>
   <p v-if="msg" class="mb-3 text-sm text-emerald-600" role="status">{{ msg }}</p>
   <p v-if="devLink" class="mb-3 break-all rounded-xl border border-line bg-surface2 p-3 text-sm">Development mode, no email was sent. Invitation link: <a :href="devLink" class="text-accent">{{ devLink }}</a></p>
   <div class="mb-4 flex flex-wrap gap-2"><input v-model="q" placeholder="Search invitations" class="field max-w-xs" /><select v-model="f" class="field w-40"><option>All</option><option>Pending</option><option>Accepted</option><option>Expired</option><option>Revoked</option></select></div>
-  <div class="overflow-x-auto rounded-2xl border border-line bg-surface"><table class="w-full text-left text-sm"><thead class="text-muted"><tr><th class="p-3">Email</th><th>Status</th><th>Quota</th><th>Created</th><th>Expires</th><th>Accepted</th><th></th></tr></thead>
-    <tbody><tr v-for="i in shown" :key="i.id" class="border-t border-line"><td class="p-3">{{ i.email }}</td><td><span :class="['pill', statusStyle[label(i)]]">{{ label(i) }}</span></td><td>{{ Math.round(i.quota_bytes / 1073741824) }} GB</td><td>{{ day(i.created_at) }}</td><td>{{ day(i.expires_at) }}</td><td>{{ day(i.accepted_at) }}</td>
-      <td class="space-x-1 whitespace-nowrap p-2 text-right"><button v-if="['pending', 'expired'].includes(eff(i))" class="btn !h-8" :disabled="busy" @click="resend(i)">Resend</button><button v-if="eff(i) === 'pending'" class="btn btn-d !h-8" :disabled="busy" @click="revoke(i)">Revoke</button></td></tr>
+  <div class="overflow-x-auto rounded-2xl border border-line bg-surface"><table class="rtable w-full text-left text-sm"><thead class="text-muted"><tr><th class="p-3">Email</th><th>Status</th><th>Quota</th><th>Created</th><th>Expires</th><th>Accepted</th><th></th></tr></thead>
+    <tbody><tr v-for="i in shown" :key="i.id" class="border-t border-line"><td data-primary class="p-3 break-all">{{ i.email }}</td><td data-label="Status"><span :class="['pill', statusStyle[label(i)]]">{{ label(i) }}</span></td><td data-label="Quota">{{ Math.round(i.quota_bytes / 1073741824) }} GB</td><td data-label="Created">{{ day(i.created_at) }}</td><td data-label="Expires">{{ day(i.expires_at) }}</td><td data-label="Accepted">{{ day(i.accepted_at) }}</td>
+      <td data-actions class="space-x-1 whitespace-nowrap p-2 text-right"><button v-if="['pending', 'expired'].includes(eff(i))" class="btn !h-8" :disabled="busy" @click="resend(i)">Resend</button><button v-if="eff(i) === 'pending'" class="btn btn-d !h-8" :disabled="busy" @click="revoke(i)">Revoke</button></td></tr>
       <tr v-if="!shown.length"><td colspan="7" class="p-8 text-center text-muted">No invitations found.</td></tr></tbody></table></div>
 </template>

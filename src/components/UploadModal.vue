@@ -11,12 +11,12 @@ const label = (i: any) => ({ queued: "Waiting…", preparing: "Preparing…", up
 </script>
 <template>
   <div class="fixed inset-0 z-40 grid place-items-center bg-black/50 p-4" @click.self="$emit('close')">
-    <div class="max-h-[92vh] w-full max-w-xl overflow-auto rounded-3xl bg-surface p-6 shadow-2xl">
+    <div class="max-h-[92dvh] w-full max-w-xl overflow-auto rounded-3xl bg-surface p-5 sm:p-6 shadow-2xl">
       <div class="flex justify-between"><h2 class="text-2xl font-semibold">Add Photos</h2><button aria-label="Close" @click="$emit('close')">✕</button></div>
       <p v-if="albumId" class="mt-1 text-sm text-muted">New photos will also be added to this album.</p>
       <div :class="['my-5 rounded-2xl border-2 border-dashed p-8 text-center text-muted', drag ? 'border-accent bg-accent-soft' : 'border-line']"
            @dragover.prevent="drag = true" @dragleave="drag = false" @drop.prevent="drag = false; add($event.dataTransfer?.files ?? null)">
-        <p class="font-medium text-ink">Drag and drop photos here</p>
+        <p class="hidden font-medium text-ink [@media(hover:hover)]:block">Drag and drop photos here</p>
         <p class="text-sm">JPEG, PNG or WebP · originals are kept untouched</p>
         <label class="btn btn-p mr-2 mt-3 cursor-pointer">Select Photos<input hidden type="file" accept="image/*" multiple @change="add(($event.target as HTMLInputElement).files); ($event.target as HTMLInputElement).value = ''" /></label>
         <label class="btn mt-3 cursor-pointer">Take Photo<input hidden type="file" accept="image/*" capture="environment" @change="add(($event.target as HTMLInputElement).files); ($event.target as HTMLInputElement).value = ''" /></label>

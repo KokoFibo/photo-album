@@ -44,17 +44,18 @@ onUnmounted(() => window.removeEventListener("photos-changed", load));
   <div v-else-if="!albums.length" class="py-16 text-center text-muted"><h2 class="text-2xl font-semibold text-ink">No albums yet</h2><p class="mt-1">Create an album to organize your photos.</p>
     <button v-if="showCreate" class="btn btn-p mt-4" @click="edit('new')">Create Album</button></div>
   <div v-else class="grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-3 xl:grid-cols-4 lg:gap-x-5">
+    <div v-if="menu" class="fixed inset-0 z-10" @click="menu = null" />
     <div v-for="a in albums" :key="a.id" class="group relative">
       <a :href="`/album?id=${a.id}`" class="block">
         <div class="relative aspect-[4/3] overflow-hidden rounded-2xl bg-surface2 shadow-[0_-6px_0_-2px_var(--b),0_-11px_0_-5px_var(--s2)] transition duration-300 group-hover:-translate-y-1">
           <img v-if="a.cover_url" :src="a.cover_url" :alt="a.name" loading="lazy" class="size-full object-cover transition duration-500 group-hover:scale-105" />
           <span v-if="a.owner_id !== me" class="absolute left-2.5 top-2.5 rounded-full bg-black/55 px-2.5 py-0.5 text-xs text-white backdrop-blur">Shared</span>
         </div>
-        <h3 class="mt-3.5 pr-8 text-[17px] font-medium">{{ a.name }}</h3>
-        <p class="text-sm text-muted">{{ a.photo_count }} Photo{{ a.photo_count === 1 ? "" : "s" }} · Updated {{ fmt(a.updated_at) }}</p>
+        <h3 class="mt-3.5 pr-10 text-[17px] font-medium">{{ a.name }}</h3>
+        <p class="pr-10 text-sm text-muted">{{ a.photo_count }} Photo{{ a.photo_count === 1 ? "" : "s" }} · Updated {{ fmt(a.updated_at) }}</p>
       </a>
-      <button class="absolute bottom-0 right-0 size-8 rounded-full text-muted hover:bg-surface2" aria-label="Album options" @click="menu = menu === a.id ? null : a.id">⋯</button>
-      <div v-if="menu === a.id" class="absolute bottom-9 right-0 z-10 w-44 rounded-xl border border-line bg-surface p-1 text-sm shadow-xl">
+      <button class="absolute bottom-0 right-0 size-10 rounded-full text-muted hover:bg-surface2" aria-label="Album options" @click="menu = menu === a.id ? null : a.id">⋯</button>
+      <div v-if="menu === a.id" class="absolute bottom-11 right-0 z-20 w-44 rounded-xl border border-line bg-surface p-1 text-sm shadow-xl">
         <a :href="`/album?id=${a.id}`" class="block rounded-lg px-3 py-2 hover:bg-surface2">Open Album</a>
         <template v-if="a.owner_id === me">
           <button class="block w-full rounded-lg px-3 py-2 text-left hover:bg-surface2" @click="edit(a)">Edit Details</button>

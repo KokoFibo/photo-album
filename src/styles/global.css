@@ -17,3 +17,13 @@ body { background: var(--bg); color: var(--t); font-family: var(--font-sans); }
 .btn:hover{background:var(--s2)}.btn-p{background:var(--a);border-color:var(--a);color:#fff}.btn-p:hover{background:var(--a);filter:brightness(1.1)}.btn-d{color:#dc2626}
 .card{border-radius:1.25rem;border:1px solid var(--b);background:var(--s);padding:1.5rem}
 .pill{display:inline-block;border-radius:9999px;padding:.125rem .625rem;font-size:.75rem;font-weight:500}
+/* Tables become stacked cards on phones (add class "rtable"; data-label on cells, data-primary on the title cell, data-actions on the button cell) */
+@media (max-width: 639px) {
+  .rtable thead { display: none; }
+  .rtable, .rtable tbody, .rtable tr, .rtable td { display: block; width: 100%; }
+  .rtable tr { padding: .75rem 1rem; }
+  .rtable td[data-label] { display: flex; justify-content: space-between; gap: 1rem; padding: .2rem 0 !important; text-align: right; }
+  .rtable td[data-label]::before { content: attr(data-label); flex-shrink: 0; color: var(--m); text-align: left; }
+  .rtable td[data-primary] { padding: 0 0 .4rem !important; text-align: left; }
+  .rtable td[data-actions] { padding: .5rem 0 0 !important; text-align: left; }
+}

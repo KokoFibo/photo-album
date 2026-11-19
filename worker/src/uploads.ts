@@ -1,4 +1,5 @@
 import { Env, HttpError, Route, Ctx, UUID, limited } from "./http";
+import { wipeGps } from "./exif";
 import { withUser, asService, pgCode } from "./db";
 
 const enc = new TextEncoder();
@@ -64,13 +65,13 @@ export async function mediaUrl(
   env: Env,
   origin: string,
   key: string,
-  o: { fn?: string; ct?: string; until?: number } = {},
+  o: { fn?: string; ct?: string; until?: number; stripGps?: boolean } = {},
 ) {
   const exp = Math.min(
     (Math.floor(Date.now() / 600_000) + 2) * 600,
     o.until ?? Infinity,
   ); // `until` caps the URL at a guest link's expiry
-  return `${origin}/api/media/${await mint(env, { k: key, fn: o.fn, ct: o.ct, exp })}`;
+  return `${origin}/api/media/${await mint(env, { k: key, fn: o.fn, ct: o.ct, sg: o.stripGps ? 1 : undefined, exp })}`;
 }
 
 export function magicOk(b: Uint8Array, mime: string) {
@@ -376,7 +377,7 @@ async function signUrls(c: Ctx) {
 }
 
 async function media(env: Env, token: string) {
-  const t = await unmint<{ k: string; fn?: string; ct?: string }>(env, token);
+  const t = await unmint<{ k: string; fn?: string; ct?: string; sg?: number }>(env, token);
   const obj = await env.PHOTOS.get(t.k);
   if (!obj) throw new HttpError(404, "Not found.");
   const h = new Headers({
@@ -390,7 +391,8 @@ async function media(env: Env, token: string) {
       "Content-Disposition",
       `attachment; filename="${t.fn.replace(/["\\\r\n]/g, "_")}"`,
     );
-  return new Response(obj.body, { headers: h });
+  const body: BodyInit | null = t.sg ? wipeGps(new Uint8Array(await obj.arrayBuffer())) : obj.body;   // guest downloads: GPS removed
+  return new Response(body, { headers: h });
 }
 
 export const uploadRoutes: Route[] = [

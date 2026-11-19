@@ -113,7 +113,7 @@ onMounted(() => load().catch((e) => (err.value = e.message)));
     @click.self="$emit('close')"
   >
     <div
-      class="max-h-[92vh] w-full max-w-lg overflow-auto rounded-3xl bg-surface p-6 shadow-2xl"
+      class="max-h-[92dvh] w-full max-w-lg overflow-auto rounded-3xl bg-surface p-5 sm:p-6 shadow-2xl"
     >
       <div class="flex justify-between">
         <div>
@@ -157,7 +157,7 @@ onMounted(() => load().catch((e) => (err.value = e.message)));
           Share with members of Album. Viewers can look at the photos. Editors
           can also change the album's details.
         </p>
-        <form class="flex gap-2" @submit.prevent="add">
+        <form class="flex flex-col gap-2 sm:flex-row" @submit.prevent="add">
           <input
             v-model="email"
             type="email"
@@ -165,7 +165,7 @@ onMounted(() => load().catch((e) => (err.value = e.message)));
             placeholder="Member's email address"
             class="field"
           />
-          <select v-model="role" class="field !w-28">
+          <select v-model="role" class="field sm:!w-28">
             <option value="viewer">Viewer</option>
             <option value="editor">Editor</option></select
           ><button class="btn btn-p" :disabled="busy">Share</button>
@@ -174,15 +174,15 @@ onMounted(() => load().catch((e) => (err.value = e.message)));
           <li
             v-for="m in members"
             :key="m.user_id"
-            class="flex items-center gap-2 py-2"
+            class="flex flex-wrap items-center gap-2 py-2.5"
           >
-            <div class="min-w-0 flex-1">
+            <div class="min-w-0 basis-full sm:flex-1 sm:basis-0">
               <b class="block truncate font-medium">{{ m.display_name }}</b
-              ><span class="text-muted">{{ m.email }}</span>
+              ><span class="block truncate text-muted">{{ m.email }}</span>
             </div>
             <select
               :value="m.role"
-              class="field !h-9 !w-28"
+              class="field !h-9 !w-32 flex-1 sm:flex-none"
               @change="setRole(m, ($event.target as HTMLSelectElement).value)"
             >
               <option value="viewer">Viewer</option>
@@ -210,7 +210,7 @@ onMounted(() => load().catch((e) => (err.value = e.message)));
         </p>
         <label class="mb-3 flex items-center gap-2 text-sm"
           ><input v-model="allowDl" type="checkbox" /> Allow guests to download
-          photos (2048 px copies, no location data)</label
+          photos (original files, location data removed)</label
         >
         <button class="btn btn-p" :disabled="busy" @click="createLink">
           Create 1-hour link

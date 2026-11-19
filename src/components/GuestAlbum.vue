@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { api } from "../lib/api";
 
 interface Ph { id: string; width: number | null; height: number | null; thumb: string; full: string; download: string | null }
@@ -18,13 +18,20 @@ async function load() {
 const step = (d: number) => { if (open.value !== null && g.value?.photos.length) open.value = (open.value + d + g.value.photos.length) % g.value.photos.length; };
 const keys = (e: KeyboardEvent) => { if (open.value === null) return; if (e.key === "Escape") open.value = null; else if (e.key === "ArrowRight") step(1); else if (e.key === "ArrowLeft") step(-1); };
 const swipe = (e: TouchEvent) => { const d = e.changedTouches[0].clientX - tx; if (Math.abs(d) > 60) step(d < 0 ? 1 : -1); };
+let pushed = false;
+watch(open, (i, prev) => {
+  document.body.style.overflow = i === null ? "" : "hidden";            // no page scrolling behind the viewer
+  if (i !== null && prev === null) { history.pushState({ lb: 1 }, ""); pushed = true; }
+  else if (i === null && pushed) { pushed = false; if (history.state?.lb) history.back(); }
+});
+const pop = () => { if (open.value !== null) { pushed = false; open.value = null; } };   // Back button closes the viewer
 onMounted(() => {
   token = decodeURIComponent(location.hash.slice(1));
   if (!token) { error.value = "This link is incomplete."; loading.value = false; return; }
   load(); tick = setInterval(() => (now.value = Date.now()), 15000); refresh = setInterval(load, 8 * 60_000);   // fresh image addresses while the page stays open
-  addEventListener("keydown", keys);
+  addEventListener("keydown", keys); addEventListener("popstate", pop);
 });
-onUnmounted(() => { clearInterval(tick); clearInterval(refresh); removeEventListener("keydown", keys); });
+onUnmounted(() => { clearInterval(tick); clearInterval(refresh); removeEventListener("keydown", keys); removeEventListener("popstate", pop); document.body.style.overflow = ""; });
 </script>
 
 <template>
@@ -44,11 +51,11 @@ onUnmounted(() => { clearInterval(tick); clearInterval(refresh); removeEventList
     </div>
 
     <div v-if="cur" class="fixed inset-0 z-30 grid place-items-center bg-black/95 text-white" @click.self="open = null" @touchstart="tx = $event.touches[0].clientX" @touchend="swipe">
-      <div class="absolute inset-x-0 top-0 z-10 flex items-center gap-2 p-3"><button class="size-10 rounded-full bg-white/10" aria-label="Close" @click="open = null">✕</button><span class="flex-1" />
+      <div class="absolute inset-x-0 top-0 z-10 flex items-center gap-2 pb-3 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-[max(0.75rem,env(safe-area-inset-top))]"><button class="size-10 rounded-full bg-white/10" aria-label="Close" @click="open = null">✕</button><span class="flex-1" />
         <a v-if="cur.download" :href="cur.download" class="btn !border-white/20 !bg-white/10 !text-white">Download</a></div>
-      <button class="absolute left-3 z-10 size-11 rounded-full bg-white/10" aria-label="Previous" @click="step(-1)">‹</button>
+      <button class="absolute left-3 z-10 hidden size-11 rounded-full bg-white/10 md:block" aria-label="Previous" @click="step(-1)">‹</button>
       <img :src="cur.full" alt="" class="max-h-[88dvh] max-w-[94%] rounded md:max-h-[100dvh] md:max-w-full md:rounded-none" />
-      <button class="absolute right-3 z-10 size-11 rounded-full bg-white/10" aria-label="Next" @click="step(1)">›</button>
+      <button class="absolute right-3 z-10 hidden size-11 rounded-full bg-white/10 md:block" aria-label="Next" @click="step(1)">›</button>
     </div>
   </main>
 </template>

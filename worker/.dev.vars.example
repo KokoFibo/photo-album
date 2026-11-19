@@ -1,0 +1,6 @@
+DATABASE_URL=postgresql://album_app:APPPASS@127.0.0.1:5432/album
+DATABASE_SERVICE_URL=postgresql://album_service:SVCPASS@127.0.0.1:5432/album
+BETTER_AUTH_SECRET=<64 random hex characters>
+MEDIA_SIGNING_SECRET=<64 random hex characters>
+# Optional Cloudflare Turnstile (use Cloudflare's always-pass test secret locally):
+# TURNSTILE_SECRET=1x0000000000000000000000000000000AA

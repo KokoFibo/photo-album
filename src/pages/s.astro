@@ -1,0 +1,5 @@
+---
+import GuestLayout from "../layouts/GuestLayout.astro";
+import GuestAlbum from "../components/GuestAlbum.vue";
+---
+<GuestLayout title="Shared album"><GuestAlbum client:only="vue" /></GuestLayout>

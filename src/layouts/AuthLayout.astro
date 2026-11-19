@@ -1,0 +1,13 @@
+---
+import "../styles/global.css";
+import { img } from "../data/mock";
+const { title } = Astro.props;
+---
+<!doctype html><html lang="en" data-theme="dark"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="robots" content="noindex, nofollow, noarchive" /><title>{title} · Album</title>
+<script is:inline>try{document.documentElement.dataset.theme=localStorage.getItem("theme")||"dark"}catch(e){}</script></head>
+<body class="min-h-screen lg:grid lg:grid-cols-2">
+  <div class="relative hidden lg:block bg-surface2"><img src={img(3)} alt="" class="absolute inset-0 size-full object-cover" /><div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+    <p class="absolute bottom-10 left-10 max-w-sm text-3xl font-semibold tracking-tight text-white">Your photographs, private by design.</p></div>
+  <div class="grid min-h-screen place-items-center p-6"><div class="w-full max-w-md"><div class="mb-8 text-xl font-semibold tracking-tight">Album</div><slot /></div></div>
+</body></html>

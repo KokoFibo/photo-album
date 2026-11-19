@@ -1,0 +1,5 @@
+---
+import AppLayout from "../layouts/AppLayout.astro";
+import PhotoLibrary from "../components/PhotoLibrary.vue";
+---
+<AppLayout title="Photos"><h1 class="mb-6 text-4xl font-semibold tracking-tight">Photos</h1><PhotoLibrary client:only="vue" mode="photos" /></AppLayout>

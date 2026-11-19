@@ -1,0 +1,5 @@
+---
+import AppLayout from "../layouts/AppLayout.astro";
+import HomeView from "../components/HomeView.vue";
+---
+<AppLayout title="Home"><HomeView client:only="vue" /></AppLayout>

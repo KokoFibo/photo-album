@@ -1,0 +1,39 @@
+# Dependencies and build output
+node_modules/
+dist/
+.astro/
+.wrangler/
+
+# Secrets and local configuration: NEVER commit these
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+db/seed.sql
+*.pem
+*.key
+*.pass
+
+# Database dumps and backups
+*.dump
+*.dump.gpg
+*.sql.gz
+backups/
+
+# Local scratch and logs
+*.log
+npm-debug.log*
+*.tar.gz
+*.zip
+
+# Old Supabase files (no longer used; you can delete the folder)
+supabase/
+
+# Editor and operating system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,29 @@
+${DOMAIN} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "same-origin"
+		X-Robots-Tag "noindex, nofollow, noarchive"
+		Content-Security-Policy "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		-Server
+	}
+
+	handle /api/* {
+		request_body {
+			max_size 60MB
+		}
+		reverse_proxy 127.0.0.1:8787 {
+			flush_interval -1
+		}
+	}
+
+	handle {
+		root * ${APP_DIR}/dist
+		@assets path /_astro/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} {path}/index.html
+		file_server
+	}
+}

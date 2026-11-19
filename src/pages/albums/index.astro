@@ -1,0 +1,5 @@
+---
+import AppLayout from "../../layouts/AppLayout.astro";
+import AlbumsView from "../../components/AlbumsView.vue";
+---
+<AppLayout title="Albums"><h1 class="mb-6 text-4xl font-semibold tracking-tight">Albums</h1><AlbumsView client:only="vue" showCreate /></AppLayout>

@@ -1,0 +1,5 @@
+---
+import AppLayout from "../layouts/AppLayout.astro";
+import SharedView from "../components/SharedView.vue";
+---
+<AppLayout title="Shared with Me"><SharedView client:only="vue" /></AppLayout>

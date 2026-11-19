@@ -1,0 +1,5 @@
+# Keep Unix line endings where a Linux server reads the file (a Windows checkout would break the scripts)
+* text=auto
+*.sh text eol=lf
+*.sql text eol=lf
+deploy/** text eol=lf

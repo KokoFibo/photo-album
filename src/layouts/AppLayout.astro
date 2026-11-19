@@ -1,0 +1,22 @@
+---
+import "../styles/global.css";
+import { ClientRouter } from "astro:transitions";
+import Sidebar from "../components/Sidebar.vue";
+interface Props { title: string }
+const { title } = Astro.props;
+const path = Astro.url.pathname;
+---
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow, noarchive" />
+  <title>{title} · Album</title>
+  <ClientRouter />
+  <script is:inline>const t=()=>{try{return localStorage.getItem("theme")||"dark"}catch(e){return "dark"}};document.documentElement.dataset.theme=t();document.addEventListener("astro:before-swap",e=>{e.newDocument.documentElement.dataset.theme=t()});</script>
+</head>
+<body class="min-h-screen">
+  <Sidebar client:load transition:persist="sidebar" path={path} />
+  <main class="lg:ml-60 px-4 lg:px-10 pb-28 pt-6 max-w-[1500px]"><slot /></main>
+</body>
+</html>

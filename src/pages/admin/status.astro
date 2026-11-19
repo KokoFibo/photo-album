@@ -1,0 +1,5 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import AdminStatus from "../../components/AdminStatus.vue";
+---
+<AdminLayout title="System Status"><AdminStatus client:only="vue" /></AdminLayout>

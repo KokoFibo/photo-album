@@ -9,6 +9,7 @@ interface Mem {
   display_name: string;
   email: string;
   role: "viewer" | "editor";
+  can_download: boolean;
 }
 interface Lnk {
   id: string;
@@ -22,6 +23,7 @@ const tab = ref<"people" | "link">("people"),
 const email = ref(""),
   role = ref<"viewer" | "editor">("viewer"),
   allowDl = ref(false),
+  memberDl = ref(false),
   newUrl = ref("");
 const msg = ref(""),
   err = ref(""),
@@ -55,9 +57,10 @@ const add = () =>
   run(async () => {
     await api(`/api/albums/${props.albumId}/members`, {
       method: "POST",
-      body: { email: email.value, role: role.value },
+      body: { email: email.value, role: role.value, download: memberDl.value },
     });
     email.value = "";
+    memberDl.value = false;
   }, "Album shared.");
 const setRole = (m: Mem, r: string) =>
   run(
@@ -67,6 +70,15 @@ const setRole = (m: Mem, r: string) =>
         body: { role: r },
       }),
     "Role updated.",
+  );
+const setDownload = (m: Mem, v: boolean) =>
+  run(
+    () =>
+      api(`/api/albums/${props.albumId}/members/${m.user_id}`, {
+        method: "PATCH",
+        body: { download: v },
+      }),
+    v ? `${m.display_name} can now download.` : `${m.display_name} can no longer download.`,
   );
 const removeMember = (m: Mem) =>
   run(
@@ -155,7 +167,8 @@ onMounted(() => load().catch((e) => (err.value = e.message)));
       <template v-if="tab === 'people'">
         <p class="mb-3 text-sm text-muted">
           Share with members of Album. Viewers can look at the photos. Editors
-          can also change the album's details.
+          can also change the album's details. Downloading is off unless you
+          allow it for a person (original files, location data removed).
         </p>
         <form class="flex flex-col gap-2 sm:flex-row" @submit.prevent="add">
           <input
@@ -170,6 +183,10 @@ onMounted(() => load().catch((e) => (err.value = e.message)));
             <option value="editor">Editor</option></select
           ><button class="btn btn-p" :disabled="busy">Share</button>
         </form>
+        <label class="mt-2 flex items-center gap-2 text-sm text-muted"
+          ><input v-model="memberDl" type="checkbox" /> Allow this person to
+          download the original photos</label
+        >
         <ul class="mt-4 divide-y divide-line text-sm">
           <li
             v-for="m in members"
@@ -188,6 +205,15 @@ onMounted(() => load().catch((e) => (err.value = e.message)));
               <option value="viewer">Viewer</option>
               <option value="editor">Editor</option>
             </select>
+            <label class="flex items-center gap-1.5 text-muted"
+              ><input
+                type="checkbox"
+                :checked="m.can_download"
+                :disabled="busy"
+                @change="setDownload(m, ($event.target as HTMLInputElement).checked)"
+              />
+              Download</label
+            >
             <button
               class="btn btn-d !h-9"
               :disabled="busy"

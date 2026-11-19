@@ -354,22 +354,33 @@ async function signUrls(c: Ctx) {
   const rows = (
     await withUser(c.env, me.id, (q) =>
       q.query(
-        "select p.id, p.owner_id, p.original_key, p.filename, p.mime_type, (select v.object_key from public.photo_variants v where v.photo_id = p.id and v.kind = $2) as vkey from public.photos p where p.id = any($1::uuid[])",
+        "select p.id, p.owner_id, p.original_key, p.filename, p.mime_type, (select v.object_key from public.photo_variants v where v.photo_id = p.id and v.kind = $2) as vkey, (select v.object_key from public.photo_variants v where v.photo_id = p.id and v.kind = 'large') as lkey from public.photos p where p.id = any($1::uuid[])",
         [ids, kind],
       ),
     )
   ).rows;
   const urls: Record<string, string> = {};
+  // Originals of other members' photos: only through an album shared with the download permission
+  let allowed = new Set<string>();
+  const others = kind === "original" ? rows.filter((p) => p.owner_id !== me.id).map((p) => p.id) : [];
+  if (others.length)
+    allowed = new Set(
+      (await withUser(c.env, me.id, (q) => q.query("select t.id from unnest($1::uuid[]) as t(id) where app.can_download_photo(t.id)", [others]))).rows.map((r) => r.id),
+    );
   for (const p of rows) {
-    if (kind === "original" && p.owner_id !== me.id) continue; // sharing permissions arrive with the sharing phase
-    const key: string | null = kind === "original" ? p.original_key : p.vkey;
+    const mine = p.owner_id === me.id;
+    if (kind === "original" && !mine && !allowed.has(p.id)) continue;
+    // Shared downloads never carry GPS: JPEG originals are cleaned, other formats get the metadata-free large copy
+    const shared = kind === "original" && !mine, useLarge = shared && p.mime_type !== "image/jpeg";
+    const key: string | null = kind === "original" ? (useLarge ? p.lkey : p.original_key) : p.vkey;
     if (!key || !key.startsWith(`users/${p.owner_id}/`)) continue; // never serve another member's objects
+    const name = useLarge ? `${String(p.filename).replace(/\.[^.]+$/, "")}.${key.split(".").pop()}` : p.filename;
     urls[p.id] = await mediaUrl(
       c.env,
       c.url.origin,
       key,
       kind === "original"
-        ? { fn: download ? p.filename : undefined, ct: p.mime_type }
+        ? { fn: download ? name : undefined, ct: useLarge ? undefined : p.mime_type, stripGps: shared && !useLarge }
         : {},
     );
   }

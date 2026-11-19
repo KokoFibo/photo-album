@@ -4,7 +4,7 @@ import { api, myId } from "../lib/api";
 import { signed } from "../lib/media";
 import PhotoInfo from "./PhotoInfo.vue";
 
-const props = defineProps<{ mode: "photos" | "favorites" | "album"; albumId?: string; compact?: boolean; readOnly?: boolean }>();
+const props = defineProps<{ mode: "photos" | "favorites" | "album"; albumId?: string; compact?: boolean; readOnly?: boolean; canDownload?: boolean }>();
 interface P { id: string; filename: string; width: number | null; height: number | null; taken_at: string; exif: any; size_bytes: number; owner_id: string; favorite: boolean; url: string | null }
 const SIZE = 60;
 const items = ref<P[]>([]), loading = ref(true), more = ref(true), page = ref(0);
@@ -18,6 +18,14 @@ const picker = ref(false), albums = ref<{ id: string; name: string }[]>([]);
 const sentinel = ref<HTMLElement>(), box = ref<HTMLElement>();
 let io: IntersectionObserver | undefined, timer: any;
 
+const loadingAll = ref(false);
+const allSelected = computed(() => !more.value && items.value.length > 0 && chk.value.size === items.value.length);
+async function selectAll() {   // loads every page of the album first, so the whole album is selected, not only what is on screen
+  loadingAll.value = true;
+  while (more.value) { const n = items.value.length; await load(); if (items.value.length === n) break; }
+  chk.value = new Set(items.value.map((x) => x.id)); loadingAll.value = false;
+}
+const chunks = (a: string[], n = 500) => { const o: string[][] = []; for (let i = 0; i < a.length; i += n) o.push(a.slice(i, i + n)); return o; };   // the server accepts 500 photos per request
 const flash = (s: string) => { msg.value = s; setTimeout(() => (msg.value = ""), 2600); };
 async function load(reset = false) {
   if (reset) { items.value = []; page.value = 0; more.value = true; chk.value = new Set(); }
@@ -138,10 +146,10 @@ const ids = () => [...chk.value];
 const done = (m: string) => { flash(m); window.dispatchEvent(new Event("photos-changed")); };
 async function trash() {
   if (!confirm(`Move ${chk.value.size} photo(s) to Trash? You can restore them within 30 days.`)) return;
-  try { await api("/api/photos/trash", { method: "POST", body: { ids: ids() } }); done("Moved to Trash."); } catch { flash("Photos could not be moved to Trash."); }
+  try { for (const part of chunks(ids())) await api("/api/photos/trash", { method: "POST", body: { ids: part } }); done("Moved to Trash."); } catch { flash("Photos could not be moved to Trash."); }
 }
 async function removeFromAlbum() {
-  try { await api(`/api/albums/${props.albumId}/photos`, { method: "DELETE", body: { ids: ids() } }); done("Removed from album."); } catch { flash("Photos could not be removed."); }
+  try { for (const part of chunks(ids())) await api(`/api/albums/${props.albumId}/photos`, { method: "DELETE", body: { ids: part } }); done("Removed from album."); } catch { flash("Photos could not be removed."); }
 }
 async function setCover() {
   try { await api(`/api/albums/${props.albumId}/cover`, { method: "POST", body: { photoId: ids()[0] } }); done("Album cover updated."); } catch { flash("The cover could not be changed."); }
@@ -152,12 +160,12 @@ async function openPicker() {
 }
 async function addTo(albumId: string) {
   picker.value = false;
-  try { await api(`/api/albums/${albumId}/photos`, { method: "POST", body: { ids: ids() } }); done("Added to album."); } catch (e: any) { flash(e.message || "Photos could not be added."); }
+  try { for (const part of chunks(ids())) await api(`/api/albums/${albumId}/photos`, { method: "POST", body: { ids: part } }); done("Added to album."); } catch (e: any) { flash(e.message || "Photos could not be added."); }
 }
 
 onMounted(async () => {
   me.value = await myId(); await load();
-  io = new IntersectionObserver((e) => { if (e[0].isIntersecting && !loading.value && more.value) load(); }, { rootMargin: "600px" });
+  io = new IntersectionObserver((e) => { if (e[0].isIntersecting && !loading.value && !loadingAll.value && more.value) load(); }, { rootMargin: "600px" });
   if (sentinel.value) io.observe(sentinel.value);
   addEventListener("keydown", keys); addEventListener("resize", onResize); window.addEventListener("photos-changed", reload);
 });
@@ -170,6 +178,7 @@ onUnmounted(() => { io?.disconnect(); document.body.style.overflow = ""; removeE
     <input v-model="q" class="field max-w-xs" placeholder="Search by filename" @input="type" />
     <select v-model="sort" class="field w-36" @change="reload"><option value="new">Newest</option><option value="old">Oldest</option><option value="name">Filename</option></select>
     <button v-if="!readOnly" :class="['btn', sel && 'btn-p']" @click="sel = !sel; chk = new Set()">{{ sel ? "Done" : "Select" }}</button>
+    <button v-if="sel && mode === 'album'" class="btn" :disabled="loadingAll" @click="allSelected ? (chk = new Set()) : selectAll()">{{ loadingAll ? "Selecting…" : allSelected ? "Clear selection" : "Select all" }}</button>
   </div>
   <div v-if="sel && chk.size" class="h-20" />
   <div v-if="sel && chk.size" class="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur lg:left-60">
@@ -208,7 +217,7 @@ onUnmounted(() => { io?.disconnect(); document.body.style.overflow = ""; removeE
       <div class="absolute inset-x-0 top-0 z-10 flex items-center gap-2 pb-3 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-[max(0.75rem,env(safe-area-inset-top))]">
         <button class="size-10 rounded-full bg-white/10" aria-label="Close" @click="open = null">✕</button><span class="min-w-0 flex-1 truncate text-sm opacity-80">{{ cur.filename }}</span>
         <button class="size-10 rounded-full bg-white/10" :class="cur.favorite && 'text-rose-400'" aria-label="Favorite" @click="fav(cur)">{{ cur.favorite ? "♥" : "♡" }}</button>
-        <button v-if="cur.owner_id === me" class="size-10 rounded-full bg-white/10" aria-label="Download original" @click="download(cur)">⤓</button>
+        <button v-if="cur.owner_id === me || canDownload" class="size-10 rounded-full bg-white/10" aria-label="Download original" @click="download(cur)">⤓</button>
         <button class="hidden size-10 rounded-full bg-white/10 sm:block" aria-label="Full screen" @click="full">⛶</button>
         <button class="size-10 rounded-full bg-white/10" aria-label="Photo information" @click="toggleInfo">ⓘ</button>
       </div>

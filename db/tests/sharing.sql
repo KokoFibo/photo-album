@@ -35,6 +35,7 @@ select t.ok('owner shares by email', app.share_album('22222222-0000-0000-0000-00
 select t.fails('unknown email is refused', $q$ select app.share_album('22222222-0000-0000-0000-000000000001', 'nobody@test.dev', 'viewer') $q$);
 select t.fails('owner cannot share with herself', $q$ select app.share_album('22222222-0000-0000-0000-000000000001', 'alice@test.dev', 'viewer') $q$);
 select t.ok('owner can list the people', (select count(*) from app.album_share_members('22222222-0000-0000-0000-000000000001')) = 1);
+select t.ok('download is off by default', not (select can_download from app.album_share_members('22222222-0000-0000-0000-000000000001') where user_id = 'bob-1'));
 select t.as_member('bob-1');
 select t.ok('Bob now sees the album', (select count(*) from public.albums) = 1);
 select t.ok('Bob sees the ready photo', (select count(*) from public.photos where status = 'ready') = 1);
@@ -44,6 +45,11 @@ select t.ok('Bob sees who owns the album', app.album_owner_name('22222222-0000-0
 select t.ok('Shared with Me lists the album', (select count(*) from app.shared_with_me()) = 1 and (select photo_count from app.shared_with_me()) = 1);
 select t.fails('a viewer cannot add photos', $q$ insert into public.album_photos values ('22222222-0000-0000-0000-000000000001', '11111111-0000-0000-0000-000000000001') $q$);
 select t.ok('a viewer cannot list the other people', (select count(*) from app.album_share_members('22222222-0000-0000-0000-000000000001')) = 0 and (select count(*) from public.album_members where user_id <> 'bob-1') = 0);
+do $$ declare n int; begin update public.album_members set can_download = true where user_id = 'bob-1'; get diagnostics n = row_count; perform t.ok('a member cannot grant themselves download', n = 0 and not app.can_download_photo('11111111-0000-0000-0000-000000000001')); end $$;
+select t.as_member('alice-1');
+update public.album_members set can_download = true where album_id = '22222222-0000-0000-0000-000000000001' and user_id = 'bob-1';
+select t.as_member('bob-1');
+select t.ok('a member with permission downloads ready photos only', app.can_download_photo('11111111-0000-0000-0000-000000000001') and not app.can_download_photo('11111111-0000-0000-0000-000000000002') and not app.can_download_photo('11111111-0000-0000-0000-000000000003'));
 select t.as_member('carol-1');
 select t.ok('Carol (not shared) sees nothing', (select count(*) from public.albums) = 0 and (select count(*) from public.photos) = 0);
 select t.as_member('alice-1');

@@ -44,6 +44,7 @@ export const libraryRoutes: Route[] = [
   ["GET", /^\/api\/albums\/([^/]+)$/, "user", async (c) => {
     const r = (await q1(c, `select a.id, a.name, a.description, a.updated_at, a.photo_count, a.owner_id, app.album_owner_name(a.id) as owner_name,
         (case when a.owner_id = app.uid() then 'owner' else (select m.role::text from public.album_members m where m.album_id = a.id and m.user_id = app.uid()) end) as my_role,
+        (a.owner_id = app.uid() or coalesce((select m.can_download from public.album_members m where m.album_id = a.id and m.user_id = app.uid()), false)) as can_download,
         (select v.object_key from public.photo_variants v where v.kind = 'large' and v.photo_id = coalesce(a.hero_photo_id, a.cover_photo_id,
            (select ap.photo_id from public.album_photos ap join public.photos p on p.id = ap.photo_id where ap.album_id = a.id and p.deleted_at is null and p.status = 'ready' order by ap.position, ap.added_at limit 1))) as hero_key
       from public.albums_with_counts a where a.id = $1::uuid`, [id(c.params[0])])).rows[0];

@@ -33,12 +33,15 @@ export const shareRoutes: Route[] = [
     if (limited(`share:${c.user!.id}`, 20)) throw new HttpError(429, "Too many requests. Please wait a minute.");
     if (!EMAIL.test(email)) throw new HttpError(400, "Enter a valid email address.");
     if (!["viewer", "editor"].includes(b.role)) throw new HttpError(400, "Choose Viewer or Editor.");
-    return { name: (await q(c, "select app.share_album($1::uuid, $2, $3::public.share_role) as name", [album, email, b.role])).rows[0].name };
+    const name = (await q(c, "select app.share_album($1::uuid, $2, $3::public.share_role) as name", [album, email, b.role])).rows[0].name;
+    await q(c, "update public.album_members set can_download = $3::boolean where album_id = $1::uuid and user_id = (select id from public.profiles where lower(email) = $2)", [album, email, b.download === true]);
+    return { name };
   }],
   ["PATCH", /^\/api\/albums\/([^/]+)\/members\/([^/]+)$/, "user", async (c) => {
-    const b = await c.body();
-    if (!["viewer", "editor"].includes(b.role)) throw new HttpError(400, "Choose Viewer or Editor.");
-    const r = await q(c, "update public.album_members set role = $3::public.share_role where album_id = $1::uuid and user_id = $2 returning user_id", [id(c.params[0]), c.params[1], b.role]);
+    const b = await c.body(), hasRole = b.role !== undefined, hasDl = b.download !== undefined;
+    if (!hasRole && !hasDl) throw new HttpError(400, "Nothing to change.");
+    if (hasRole && !["viewer", "editor"].includes(b.role)) throw new HttpError(400, "Choose Viewer or Editor.");
+    const r = await q(c, "update public.album_members set role = coalesce($3::public.share_role, role), can_download = coalesce($4::boolean, can_download) where album_id = $1::uuid and user_id = $2 returning user_id", [id(c.params[0]), c.params[1], hasRole ? b.role : null, hasDl ? b.download === true : null]);
     if (!r.rows[0]) throw new HttpError(404, "Member not found.");
     return { ok: true };
   }],

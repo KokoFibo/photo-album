@@ -59,7 +59,7 @@ onUnmounted(() => window.removeEventListener("photos-changed", load));
       </div>
     </section>
     <p v-if="msg" class="mb-3 text-sm text-emerald-600" role="status">{{ msg }}</p>
-    <PhotoLibrary mode="album" :album-id="id" :read-only="!isOwner" />
+    <PhotoLibrary mode="album" :album-id="id" :read-only="!isOwner" :can-download="isOwner || !!album.can_download" />
     <ShareDialog v-if="sharing" :album-id="id" :album-name="album.name" @close="sharing = false" />
     <div v-if="editing" class="fixed inset-0 z-40 grid place-items-center bg-black/50 p-4" @click.self="editing = false"><form class="w-full max-w-md space-y-4 rounded-3xl bg-surface p-6" @submit.prevent="save">
       <h2 class="text-2xl font-semibold">Edit Details</h2>

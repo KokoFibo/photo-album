@@ -9,7 +9,7 @@ export const uploads = reactive<{ items: UploadItem[] }>({ items: [] });
 // exifr is a CommonJS package: load it on demand in the browser so named-export interop and server rendering never matter
 async function loadExifr(): Promise<any> { const m: any = await import("exifr"); return m.default ?? m; }
 
-const ACCEPT = /^image\/(jpeg|png|webp)$/, MAX = 2, VARIANTS = [["thumbnail", 320], ["small", 640], ["medium", 1280], ["large", 2048]] as const;
+const ACCEPT = /^image\/(jpeg|png|webp)$/, MAX = 2, VARIANTS = [["thumbnail", 320, 0.8], ["small", 640, 0.82], ["medium", 1280, 0.86], ["large", 3072, 0.9]] as const;   // [name, longest side px, quality]
 const aborts = new Map<string, () => void>();
 let running = 0, seq = 0;
 
@@ -80,19 +80,19 @@ function put(it: UploadItem, url: string, blob: Blob, onProgress: (n: number) =>
 async function prepare(file: File) {
   const [bmp, sha, meta] = await Promise.all([createImageBitmap(file), sha256(file), readMeta(file)]);
   const blobs: Record<string, Blob> = {}; let vmime = "image/webp";
-  for (const [kind, max] of VARIANTS) { const r = await resize(bmp, max, vmime); vmime = r.type; blobs[kind] = r; }
+  for (const [kind, max, quality] of VARIANTS) { const r = await resize(bmp, max, vmime, quality); vmime = r.type; blobs[kind] = r; }
   const out = { sha, width: bmp.width, height: bmp.height, blobs, vmime, ...meta };
   bmp.close();
   return out;
 }
 
-async function resize(bmp: ImageBitmap, max: number, mime: string): Promise<Blob> {
+async function resize(bmp: ImageBitmap, max: number, mime: string, quality: number): Promise<Blob> {
   const s = Math.min(1, max / Math.max(bmp.width, bmp.height));
   const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(bmp.width * s)); c.height = Math.max(1, Math.round(bmp.height * s));
   const ctx = c.getContext("2d")!; ctx.imageSmoothingQuality = "high"; ctx.drawImage(bmp, 0, 0, c.width, c.height);
   const enc = (t: string, q: number) => new Promise<Blob | null>((r) => c.toBlob(r, t, q));
-  let b = await enc(mime, 0.82);
-  if (!b || b.type !== mime) b = await enc("image/jpeg", 0.85);   // Safari cannot encode WebP: fall back to JPEG
+  let b = await enc(mime, quality);
+  if (!b || b.type !== mime) b = await enc("image/jpeg", Math.min(0.92, quality + 0.03));   // Safari cannot encode WebP: fall back to JPEG
   if (!b) throw new Error("This image could not be processed.");
   return b;
 }

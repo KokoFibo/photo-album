@@ -1,18 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import UploadModal from "./UploadModal.vue";
 import UploadTray from "./UploadTray.vue";
 import { authClient, guard, myProfile } from "../lib/api";
 const props = defineProps<{ path: string }>();
-const nav = [
-  ["/", "Home"],
-  ["/photos", "Photos"],
-  ["/albums", "Albums"],
-  ["/favorites", "Favorites"],
-  ["/shared", "Shared with Me"],
-  ["/trash", "Trash"],
-];
 const cur = ref(props.path);
+const menu = ref(false);   // hamburger menu (phones and tablets)
 const on = (p: string) =>
   p === "/"
     ? cur.value === "/"
@@ -24,6 +17,15 @@ const upload = ref(false),
   used = ref(0),
   quota = ref(1),
   avatar = ref<string | null>(null);
+const nav = computed(() => [
+  ["/", "Home"],
+  ...(isAdmin.value ? [["/admin", "Overview"]] : []),
+  ["/photos", "Photos"],
+  ["/albums", "Albums"],
+  ["/favorites", "Favorites"],
+  ["/shared", "Shared with Me"],
+  ["/trash", "Trash"],
+]);
 const dark = ref(
   typeof document === "undefined" ||
     (document.documentElement.dataset.theme ?? "dark") === "dark",
@@ -51,7 +53,14 @@ function openUpload(id?: string) {
 }
 const here = () => {
   cur.value = location.pathname;
+  menu.value = false;
 };
+const esc = (e: KeyboardEvent) => {
+  if (e.key === "Escape") menu.value = false;
+};
+watch(menu, (v) => {
+  document.body.style.overflow = v ? "hidden" : "";   // no scrolling behind the open menu
+});
 const onOpen = (e: any) => openUpload(e.detail?.albumId);
 onMounted(async () => {
   const p = await guard();
@@ -66,12 +75,15 @@ onMounted(async () => {
   window.addEventListener("photos-changed", refresh);
   window.addEventListener("profile-changed", refresh);
   window.addEventListener("open-upload", onOpen);
+  window.addEventListener("keydown", esc);
 });
 onUnmounted(() => {
   document.removeEventListener("astro:page-load", here);
   window.removeEventListener("photos-changed", refresh);
   window.removeEventListener("profile-changed", refresh);
   window.removeEventListener("open-upload", onOpen);
+  window.removeEventListener("keydown", esc);
+  document.body.style.overflow = "";
 });
 function headerUpload() {
   openUpload(
@@ -94,20 +106,41 @@ async function signOut() {
 }
 </script>
 <template>
+  <div
+    v-if="menu"
+    class="fixed inset-0 z-40 bg-black/50 lg:hidden"
+    aria-hidden="true"
+    @click="menu = false"
+  />
   <aside
-    class="hidden lg:flex fixed inset-y-0 left-0 w-60 flex-col gap-1 p-4 bg-surface border-r border-line"
+    id="main-menu"
+    aria-label="Main menu"
+    :class="[
+      'fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col gap-1 overflow-y-auto border-r border-line bg-surface p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] transition-[transform,visibility] duration-200 lg:z-auto lg:w-60 lg:translate-x-0 lg:visible',
+      menu ? 'translate-x-0' : '-translate-x-full invisible',
+    ]"
   >
-    <div class="px-3 pb-5 text-xl font-semibold tracking-tight">Album</div>
+    <div class="flex items-center justify-between px-3 pb-5">
+      <span class="text-xl font-semibold tracking-tight">Album</span>
+      <button
+        class="grid size-9 place-items-center rounded-full text-muted hover:bg-surface2 lg:hidden"
+        aria-label="Close menu"
+        @click="menu = false"
+      >
+        ✕
+      </button>
+    </div>
     <a
       v-for="[href, label] in nav"
       :key="href"
       :href="href"
       :class="[
-        'rounded-xl px-3 py-2 font-medium',
+        'rounded-xl px-3 py-2.5 font-medium lg:py-2',
         on(href)
           ? 'bg-accent-soft text-accent'
           : 'text-muted hover:bg-surface2 hover:text-ink',
       ]"
+      @click="menu = false"
       >{{ label }}</a
     >
     <div class="mt-auto rounded-2xl bg-surface2 p-4 text-sm">
@@ -124,6 +157,7 @@ async function signOut() {
       v-if="who"
       href="/profile"
       class="flex items-center gap-2 px-3 pt-2 text-sm text-muted"
+      @click="menu = false"
       ><span
         class="grid size-7 shrink-0 place-items-center overflow-hidden rounded-full bg-accent-soft text-xs font-semibold text-accent"
         ><img
@@ -136,61 +170,50 @@ async function signOut() {
     >
     <a
       href="/profile"
-      class="rounded-xl px-3 py-2 font-medium text-muted hover:bg-surface2"
+      class="rounded-xl px-3 py-2.5 font-medium text-muted hover:bg-surface2 lg:py-2"
+      @click="menu = false"
       >Profile</a
     >
     <a
       href="/settings"
-      class="rounded-xl px-3 py-2 font-medium text-muted hover:bg-surface2"
+      class="rounded-xl px-3 py-2.5 font-medium text-muted hover:bg-surface2 lg:py-2"
+      @click="menu = false"
       >Settings</a
     >
-    <a
-      v-if="isAdmin"
-      href="/admin"
-      class="rounded-xl px-3 py-2 font-medium text-muted hover:bg-surface2"
-      >Administration</a
-    >
     <button
-      class="rounded-xl px-3 py-2 text-left font-medium text-muted hover:bg-surface2"
+      class="rounded-xl px-3 py-2.5 text-left font-medium text-muted hover:bg-surface2 lg:py-2"
       @click="signOut"
     >
       Sign Out
     </button>
     <button
-      class="rounded-xl px-3 py-2 text-left font-medium text-muted hover:bg-surface2"
+      class="rounded-xl px-3 py-2.5 text-left font-medium text-muted hover:bg-surface2 lg:py-2"
       @click="toggle"
     >
       {{ dark ? "Light" : "Dark" }} mode
     </button>
   </aside>
   <header
-    class="sticky top-0 z-20 flex items-center justify-end gap-2 px-4 lg:px-10 py-3 bg-bg/80 backdrop-blur lg:ml-60"
+    class="sticky top-0 z-20 flex items-center gap-2 bg-bg/80 px-4 py-3 backdrop-blur lg:ml-60 lg:justify-end lg:px-10"
   >
     <button
-      class="lg:hidden rounded-xl border border-line bg-surface px-3 h-10"
-      @click="toggle"
+      class="grid size-10 place-items-center rounded-xl border border-line bg-surface text-lg lg:hidden"
+      aria-label="Open menu"
+      aria-controls="main-menu"
+      :aria-expanded="menu"
+      @click="menu = true"
     >
-      {{ dark ? "☀" : "☾" }}
+      ☰
     </button>
+    <span class="text-lg font-semibold tracking-tight lg:hidden">Album</span>
+    <span class="flex-1 lg:hidden" />
     <button
-      class="rounded-xl bg-accent px-4 h-10 font-medium text-white hover:brightness-110"
+      class="h-10 rounded-xl bg-accent px-4 font-medium text-white hover:brightness-110"
       @click="headerUpload"
     >
       + Add Photos
     </button>
   </header>
-  <nav
-    class="lg:hidden fixed bottom-0 inset-x-0 z-20 flex justify-around border-t border-line bg-surface/90 backdrop-blur px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] text-xs"
-  >
-    <a
-      v-for="[href, label] in nav.slice(0, 4)"
-      :key="href"
-      :href="href"
-      :class="['px-3 py-1', on(href) ? 'text-accent' : 'text-muted']"
-      >{{ label }}</a
-    >
-    <a href="/settings" class="px-3 py-1 text-muted">Settings</a>
-  </nav>
   <UploadTray @open="upload = true" />
   <UploadModal v-if="upload" :album-id="albumId" @close="upload = false" />
 </template>

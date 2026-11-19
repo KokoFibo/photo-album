@@ -187,7 +187,7 @@ async function run() {
       throw e;
     } // suspended or disabled accounts are refused here
     ok.value = "Signed in. Redirecting…";
-    location.href = me.role === "super_admin" ? "/admin" : "/";
+    location.href = "/";
   } else if (props.mode === "register") {
     unwrap(
       await authClient.signUp.email({

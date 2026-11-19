@@ -67,6 +67,7 @@ select t.ok('an expired link is refused', (select count(*) from app.guest_link(e
 select t.ok('a revoked link is refused', (select count(*) from app.guest_link(encode(sha256(convert_to('revoked', 'UTF8')), 'hex'))) = 0);
 select t.ok('an unknown link is refused', (select count(*) from app.guest_link('deadbeef')) = 0);
 select t.ok('guests only get ready, active photos', (select count(*) from app.guest_photos(encode(sha256(convert_to('good', 'UTF8')), 'hex'))) = 1);
+select t.ok('guest photos include the original key for downloads', (select count(*) from app.guest_photos(encode(sha256(convert_to('good', 'UTF8')), 'hex')) where original_key is not null) = 1);
 select t.ok('guest photos carry no GPS or metadata columns', not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'app' and p.proname = 'guest_photos' and pg_get_function_result(p.oid) ~* 'exif|latitude|longitude|filename'));
 select t.as_super();
 update public.albums set deleted_at = now() where id = '22222222-0000-0000-0000-000000000001';

@@ -77,7 +77,7 @@ export const shareRoutes: Route[] = [
       id: p.id, width: p.width, height: p.height,
       thumb: await mediaUrl(c.env, c.url.origin, p.small_key, { until }),
       full: await mediaUrl(c.env, c.url.origin, p.large_key, { until }),
-      download: link.allow_download ? await mediaUrl(c.env, c.url.origin, p.large_key, { until, fn: `photo-${String(p.id).slice(0, 8)}.${ext(p.large_key)}` }) : null,
+      download: link.allow_download && p.original_key ? await mediaUrl(c.env, c.url.origin, p.original_key, { until, ct: p.mime_type, fn: `photo-${String(p.id).slice(0, 8)}.${ext(p.original_key)}` }) : null,   // original file, not the preview size
     })));
     return { album: { name: link.name, description: link.description, photoCount: list.length }, expiresAt: link.expires_at, allowDownload: link.allow_download, photos: list };
   }],

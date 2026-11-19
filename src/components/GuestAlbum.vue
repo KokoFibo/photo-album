@@ -47,7 +47,7 @@ onUnmounted(() => { clearInterval(tick); clearInterval(refresh); removeEventList
       <div class="absolute inset-x-0 top-0 z-10 flex items-center gap-2 p-3"><button class="size-10 rounded-full bg-white/10" aria-label="Close" @click="open = null">✕</button><span class="flex-1" />
         <a v-if="cur.download" :href="cur.download" class="btn !border-white/20 !bg-white/10 !text-white">Download</a></div>
       <button class="absolute left-3 z-10 size-11 rounded-full bg-white/10" aria-label="Previous" @click="step(-1)">‹</button>
-      <img :src="cur.full" alt="" class="max-h-[88vh] max-w-[94%] rounded" />
+      <img :src="cur.full" alt="" class="max-h-[88dvh] max-w-[94%] rounded md:max-h-[100dvh] md:max-w-full md:rounded-none" />
       <button class="absolute right-3 z-10 size-11 rounded-full bg-white/10" aria-label="Next" @click="step(1)">›</button>
     </div>
   </main>

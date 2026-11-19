@@ -49,11 +49,24 @@ watch(open, async (i) => {
   if (i === null) return;
   const p = items.value[i];
   const u = await signed([p.id], "large"); if (open.value === i) big.value = u[p.id] ?? "";
+  void sharpen(p, i);
   if (p.owner_id === me.value) {   // GPS is private: the API only returns it to the owner
     const r = await api<{ latitude: number; longitude: number } | null>(`/api/photos/${p.id}/location`).catch(() => null);
     if (open.value === i) loc.value = r;
   }
 });
+// Desktop: show the 'large' preview at once, then swap in the original file for full sharpness (owner only; originals are never shared)
+const wide = () => matchMedia("(min-width: 1024px) and (hover: hover)").matches;
+async function sharpen(p: P, i: number) {
+  if (!wide() || p.owner_id !== me.value || p.size_bytes > 40 * 1048576 || Math.max(p.width ?? 0, p.height ?? 0) <= 2048) return;
+  await new Promise((r) => setTimeout(r, 400));   // skip photos the person swipes past quickly
+  if (open.value !== i) return;
+  try {
+    const url = (await signed([p.id], "original"))[p.id]; if (!url) return;
+    const im = new Image(); im.src = url; await im.decode();
+    if (open.value === i) big.value = url;
+  } catch { /* keep the preview */ }
+}
 const step = (d: number) => { if (open.value !== null && items.value.length) open.value = (open.value + d + items.value.length) % items.value.length; };
 const keys = (e: KeyboardEvent) => { if (open.value === null) return; if (e.key === "Escape") open.value = null; else if (e.key === "ArrowRight") step(1); else if (e.key === "ArrowLeft") step(-1); };
 const swipe = (e: TouchEvent) => { const d = e.changedTouches[0].clientX - tx; if (Math.abs(d) > 60) step(d < 0 ? 1 : -1); };
@@ -143,7 +156,7 @@ const expo = (v: number) => (v && v < 1 ? `1/${Math.round(1 / v)}s` : `${v}s`);
         <button class="size-10 rounded-full bg-white/10" aria-label="Photo information" @click="info = !info">ⓘ</button>
       </div>
       <button class="absolute left-3 z-10 size-11 rounded-full bg-white/10" aria-label="Previous" @click="step(-1)">‹</button>
-      <img v-if="big" :src="big" :alt="cur.filename" :class="['max-h-[86vh] max-w-[94%] rounded transition-transform duration-200', zoom ? 'scale-[1.8] cursor-zoom-out' : 'cursor-zoom-in']" @click="zoom = !zoom" />
+      <img v-if="big" :src="big" :alt="cur.filename" decoding="async" :class="['max-h-[88dvh] max-w-[94%] rounded transition-transform duration-200 md:max-h-[100dvh] md:max-w-full md:rounded-none', zoom ? 'scale-[1.8] cursor-zoom-out' : 'cursor-zoom-in']" @click="zoom = !zoom" />
       <div v-else class="size-10 animate-spin rounded-full border-2 border-white/20 border-t-white" />
       <button class="absolute right-3 z-10 size-11 rounded-full bg-white/10" aria-label="Next" @click="step(1)">›</button>
     </div>

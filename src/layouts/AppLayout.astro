@@ -17,6 +17,6 @@ const path = Astro.url.pathname;
 </head>
 <body class="min-h-screen">
   <Sidebar client:load transition:persist="sidebar" path={path} />
-  <main class="lg:ml-60 px-4 lg:px-10 pb-28 pt-6 max-w-[1500px]"><slot /></main>
+  <main class="lg:ml-60 px-4 lg:px-10 pb-16 pt-6 max-w-[1500px]"><slot /></main>
 </body>
 </html>

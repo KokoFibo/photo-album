@@ -10,7 +10,7 @@ API_URL = "http://localhost:8787"
 
 [[r2_buckets]]
 binding = "PHOTOS"
-bucket_name = "photo-album"
+bucket_name = "photo-album-dev"
 remote = true
 
 # Secrets go in worker/.dev.vars locally (see .dev.vars.example) and `wrangler secret put` in production.
